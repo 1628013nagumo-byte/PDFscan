@@ -21,7 +21,10 @@ export function createTextElement(page: PageItem): TextElement {
     text: 'テキストを入力',
     fontSize,
     color: '#111111',
+    opacity: 1,
     bold: false,
+    underline: false,
+    fontFamily: 'mplus1p',
     align: 'left',
   }
 }

@@ -1,19 +1,45 @@
-const REGULAR_URL = '/fonts/MPLUS1p-Regular.ttf'
-const BOLD_URL = '/fonts/MPLUS1p-Bold.ttf'
+import type { FontFamilyId } from '../types'
 
-let regularBytes: ArrayBuffer | null = null
-let boldBytes: ArrayBuffer | null = null
-
-export async function getRegularFontBytes(): Promise<ArrayBuffer> {
-  if (!regularBytes) {
-    regularBytes = await fetch(REGULAR_URL).then((r) => r.arrayBuffer())
-  }
-  return regularBytes!.slice(0)
+interface FontFamilyDef {
+  id: FontFamilyId
+  label: string
+  cssFamily: string
+  regularUrl: string
+  boldUrl: string | null
 }
 
-export async function getBoldFontBytes(): Promise<ArrayBuffer> {
-  if (!boldBytes) {
-    boldBytes = await fetch(BOLD_URL).then((r) => r.arrayBuffer())
+export const FONT_FAMILIES: FontFamilyDef[] = [
+  {
+    id: 'mplus1p',
+    label: 'ゴシック体 (M PLUS 1p)',
+    cssFamily: 'MPLUS1p',
+    regularUrl: '/fonts/MPLUS1p-Regular.ttf',
+    boldUrl: '/fonts/MPLUS1p-Bold.ttf',
+  },
+  {
+    id: 'zenmarugothic',
+    label: '丸ゴシック体 (Zen Maru Gothic)',
+    cssFamily: 'ZenMaruGothic',
+    regularUrl: '/fonts/ZenMaruGothic-Regular.ttf',
+    boldUrl: '/fonts/ZenMaruGothic-Bold.ttf',
+  },
+]
+
+const byteCache = new Map<string, ArrayBuffer>()
+
+async function fetchBytes(url: string): Promise<ArrayBuffer> {
+  if (!byteCache.has(url)) {
+    byteCache.set(url, await fetch(url).then((r) => r.arrayBuffer()))
   }
-  return boldBytes!.slice(0)
+  return byteCache.get(url)!.slice(0)
+}
+
+export function getFontFamily(id: FontFamilyId): FontFamilyDef {
+  return FONT_FAMILIES.find((f) => f.id === id) ?? FONT_FAMILIES[0]
+}
+
+export async function getFontBytes(id: FontFamilyId, bold: boolean): Promise<ArrayBuffer> {
+  const family = getFontFamily(id)
+  const url = (bold && family.boldUrl) || family.regularUrl
+  return fetchBytes(url)
 }

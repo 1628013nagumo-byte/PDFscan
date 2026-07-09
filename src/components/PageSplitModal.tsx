@@ -14,6 +14,10 @@ function evenDividers(splitCount: number): number[] {
   return next
 }
 
+function defaultNumbers(splitCount: number): string[] {
+  return Array.from({ length: splitCount }, (_, i) => String(i + 1))
+}
+
 export function PageSplitModal({ pageId, onClose }: { pageId: string; onClose: () => void }) {
   const pages = useStore((s) => s.pages)
   const sourceDocs = useStore((s) => s.sourceDocs)
@@ -22,7 +26,8 @@ export function PageSplitModal({ pageId, onClose }: { pageId: string; onClose: (
 
   const [splitCount, setSplitCount] = useState(3)
   const [dividers, setDividers] = useState<number[]>(evenDividers(3))
-  const [prefix, setPrefix] = useState('分割ページ')
+  const [partNumbers, setPartNumbers] = useState<string[]>(defaultNumbers(3))
+  const [prefix, setPrefix] = useState('給与明細_')
   const [bgSrc, setBgSrc] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -31,6 +36,7 @@ export function PageSplitModal({ pageId, onClose }: { pageId: string; onClose: (
   const size = page ? visualSize(page) : { width: 1, height: 1 }
   const scale = STAGE_WIDTH / size.width
   const stageHeight = size.height * scale
+  const bounds = [0, ...dividers, 1]
 
   useEffect(() => {
     if (!page || !doc) return
@@ -50,6 +56,15 @@ export function PageSplitModal({ pageId, onClose }: { pageId: string; onClose: (
   function changeSplitCount(n: number) {
     setSplitCount(n)
     setDividers(evenDividers(n))
+    setPartNumbers(defaultNumbers(n))
+  }
+
+  function updatePartNumber(index: number, value: string) {
+    setPartNumbers((prev) => {
+      const copy = [...prev]
+      copy[index] = value
+      return copy
+    })
   }
 
   function startDrag(index: number) {
@@ -81,20 +96,24 @@ export function PageSplitModal({ pageId, onClose }: { pageId: string; onClose: (
   async function handleSplit() {
     if (!page || !doc) return
     setError(null)
-    if (!prefix.trim()) {
-      setError('ファイル名を入力してください')
+    if (partNumbers.some((n) => !n.trim())) {
+      setError('すべてのパートに番号を入力してください')
+      return
+    }
+    const dedup = new Set(partNumbers.map((n) => n.trim()))
+    if (dedup.size !== partNumbers.length) {
+      setError('番号が重複しています。それぞれ別の番号にしてください')
       return
     }
     setBusy(true)
     try {
-      const bounds = [0, ...dividers, 1]
       const regions = []
       for (let i = 0; i < bounds.length - 1; i++) {
         regions.push({ startFrac: bounds[i], endFrac: bounds[i + 1] })
       }
       const files = await splitPageIntoRegions(page, doc, regions)
-      const zipFiles = files.map((bytes, i) => ({ name: `${prefix}${i + 1}.pdf`, bytes }))
-      await downloadZip(zipFiles, `${prefix}.zip`)
+      const zipFiles = files.map((bytes, i) => ({ name: `${prefix}${partNumbers[i].trim()}.pdf`, bytes }))
+      await downloadZip(zipFiles, `${prefix || 'split'}.zip`)
       onClose()
     } catch (err) {
       console.error(err)
@@ -110,7 +129,7 @@ export function PageSplitModal({ pageId, onClose }: { pageId: string; onClose: (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal split-modal" onClick={(e) => e.stopPropagation()}>
         <h3>ページを分割</h3>
-        <p className="hint">線をドラッグして分割位置を調整してから保存してください。</p>
+        <p className="hint">線をドラッグして分割位置を調整し、それぞれに識別番号を入力してください。</p>
 
         <label>
           分割数
@@ -133,12 +152,27 @@ export function PageSplitModal({ pageId, onClose }: { pageId: string; onClose: (
               <span className="split-divider-handle">⇕</span>
             </div>
           ))}
+          {bounds.slice(0, -1).map((start, i) => (
+            <div key={i} className="split-number-tag" style={{ top: start * stageHeight + 8 }}>
+              <span>No.</span>
+              <input
+                type="text"
+                value={partNumbers[i] ?? ''}
+                onPointerDown={(e) => e.stopPropagation()}
+                onChange={(e) => updatePartNumber(i, e.target.value)}
+              />
+            </div>
+          ))}
         </div>
 
         <label>
-          ファイル名(共通部分・末尾に 1, 2, 3... が付きます)
+          ファイル名(接頭辞・末尾に上の番号が付きます)
           <input type="text" value={prefix} onChange={(e) => setPrefix(e.target.value)} />
         </label>
+        <p className="hint">
+          例: {prefix}
+          {partNumbers[0] || '1'}.pdf
+        </p>
 
         {error && <p className="error">{error}</p>}
 

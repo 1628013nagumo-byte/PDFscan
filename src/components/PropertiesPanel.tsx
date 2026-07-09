@@ -1,4 +1,6 @@
 import { useStore } from '../store/useStore'
+import { ColorPicker } from './ColorPicker'
+import { FONT_FAMILIES } from '../lib/fonts'
 
 export function PropertiesPanel() {
   const currentPageId = useStore((s) => s.currentPageId)
@@ -27,17 +29,36 @@ export function PropertiesPanel() {
       {element.kind === 'text' && (
         <>
           <label>
+            フォント
+            <select value={element.fontFamily} onChange={(e) => set({ fontFamily: e.target.value })}>
+              {FONT_FAMILIES.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
             フォントサイズ
             <input type="range" min={8} max={72} value={element.fontSize} onChange={(e) => set({ fontSize: Number(e.target.value) })} />
             <span>{element.fontSize}</span>
           </label>
           <label>
             文字色
-            <input type="color" value={element.color} onChange={(e) => set({ color: e.target.value })} />
+            <ColorPicker value={element.color} onChange={(hex) => set({ color: hex })} />
+          </label>
+          <label>
+            文字の濃さ
+            <input type="range" min={0.15} max={1} step={0.05} value={element.opacity} onChange={(e) => set({ opacity: Number(e.target.value) })} />
+            <span>{Math.round(element.opacity * 100)}%</span>
           </label>
           <label className="checkbox-row">
             <input type="checkbox" checked={element.bold} onChange={(e) => set({ bold: e.target.checked })} />
             太字
+          </label>
+          <label className="checkbox-row">
+            <input type="checkbox" checked={element.underline} onChange={(e) => set({ underline: e.target.checked })} />
+            下線
           </label>
           <label>
             揃え
@@ -60,7 +81,7 @@ export function PropertiesPanel() {
             <>
               <label>
                 塗りつぶし色
-                <input type="color" value={element.fillColor} onChange={(e) => set({ fillColor: e.target.value })} />
+                <ColorPicker value={element.fillColor} onChange={(hex) => set({ fillColor: hex })} />
               </label>
               <label>
                 透明度
@@ -77,7 +98,7 @@ export function PropertiesPanel() {
             <>
               <label>
                 枠線色
-                <input type="color" value={element.strokeColor} onChange={(e) => set({ strokeColor: e.target.value })} />
+                <ColorPicker value={element.strokeColor} onChange={(hex) => set({ strokeColor: hex })} />
               </label>
               <label>
                 枠線の太さ
@@ -99,7 +120,7 @@ export function PropertiesPanel() {
             <>
               <label>
                 テキスト色
-                <input type="color" value={element.textColor} onChange={(e) => set({ textColor: e.target.value })} />
+                <ColorPicker value={element.textColor} onChange={(hex) => set({ textColor: hex })} />
               </label>
               <label>
                 テキストサイズ
@@ -119,7 +140,7 @@ export function PropertiesPanel() {
           </label>
           <label>
             色
-            <input type="color" value={element.color} onChange={(e) => set({ color: e.target.value })} />
+            <ColorPicker value={element.color} onChange={(hex) => set({ color: hex })} />
           </label>
           <label>
             線の太さ

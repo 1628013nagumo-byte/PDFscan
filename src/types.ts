@@ -1,5 +1,7 @@
 export type ElementKind = 'text' | 'image' | 'rect' | 'ellipse' | 'line' | 'checkbox'
 
+export type FontFamilyId = 'mplus1p' | 'zenmarugothic'
+
 export interface ElementBase {
   id: string
   kind: ElementKind
@@ -15,7 +17,10 @@ export interface TextElement extends ElementBase {
   text: string
   fontSize: number
   color: string
+  opacity: number
   bold: boolean
+  underline: boolean
+  fontFamily: FontFamilyId
   align: 'left' | 'center' | 'right'
 }
 

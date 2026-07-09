@@ -1,23 +1,26 @@
 import { PDFDocument, PDFFont, PDFPage, degrees, rgb } from 'pdf-lib'
 import fontkit from '@pdf-lib/fontkit'
-import type { PageItem, SourceDoc, PageElement, TextElement, ImageElement, ShapeElement, CheckboxElement } from '../types'
+import type { FontFamilyId, PageItem, SourceDoc, PageElement, TextElement, ImageElement, ShapeElement, CheckboxElement } from '../types'
 import { combinedRotation, visualBoxToRawRect, visualPointToRaw } from './geometry'
 import { hexToRgb01 } from './color'
 import { wrapText } from './textWrap'
-import { getRegularFontBytes, getBoldFontBytes } from './fonts'
+import { getFontBytes } from './fonts'
 
 const LINE_HEIGHT_RATIO = 1.3
 const BASELINE_RATIO = 0.82
 
-async function drawTextElement(page: PDFPage, el: TextElement, pageItem: PageItem, regularFont: PDFFont | null, boldFont: PDFFont | null) {
-  // Guaranteed non-null: buildPdf only omits a font when no element needs it.
-  const font = (el.bold ? boldFont : regularFont)!
+type FontLookup = (familyId: FontFamilyId, bold: boolean) => PDFFont
+
+async function drawTextElement(page: PDFPage, el: TextElement, pageItem: PageItem, getFont: FontLookup) {
+  const font = getFont(el.fontFamily, el.bold)
   const rawW = pageItem.rawWidth
   const rawH = pageItem.rawHeight
   const rotate = combinedRotation(pageItem)
   const lineHeight = el.fontSize * LINE_HEIGHT_RATIO
   const lines = wrapText(font, el.text, el.fontSize, el.width)
   const { r, g, b } = hexToRgb01(el.color)
+  const underlineOffset = el.fontSize * 0.12
+  const underlineThickness = Math.max(0.6, el.fontSize * 0.055)
 
   lines.forEach((line, i) => {
     if (!line) return
@@ -35,8 +38,14 @@ async function drawTextElement(page: PDFPage, el: TextElement, pageItem: PageIte
       size: el.fontSize,
       font,
       color: rgb(r, g, b),
+      opacity: el.opacity,
       rotate: degrees(rotate),
     })
+    if (el.underline) {
+      const p1 = visualPointToRaw(visualX, visualY + underlineOffset, rawW, rawH, rotate)
+      const p2 = visualPointToRaw(visualX + lineWidth, visualY + underlineOffset, rawW, rawH, rotate)
+      page.drawLine({ start: p1, end: p2, thickness: underlineThickness, color: rgb(r, g, b), opacity: el.opacity })
+    }
   })
 }
 
@@ -59,9 +68,7 @@ async function drawImageElement(page: PDFPage, el: ImageElement, pageItem: PageI
   })
 }
 
-function drawShapeElement(page: PDFPage, el: ShapeElement, pageItem: PageItem, regularFontOrNull: PDFFont | null) {
-  // Guaranteed non-null when el.text is set: buildPdf embeds it whenever any shape has label text.
-  const regularFont = regularFontOrNull!
+function drawShapeElement(page: PDFPage, el: ShapeElement, pageItem: PageItem, getFont: FontLookup) {
   const rawW = pageItem.rawWidth
   const rawH = pageItem.rawHeight
   const rotate = combinedRotation(pageItem)
@@ -93,18 +100,19 @@ function drawShapeElement(page: PDFPage, el: ShapeElement, pageItem: PageItem, r
   }
 
   if (el.text) {
+    const font = getFont('mplus1p', false)
     const lineHeight = el.fontSize * LINE_HEIGHT_RATIO
-    const lines = wrapText(regularFont, el.text, el.fontSize, Math.max(1, el.width - 8))
+    const lines = wrapText(font, el.text, el.fontSize, Math.max(1, el.width - 8))
     const totalHeight = lines.length * lineHeight
     const startY = el.y + Math.max(0, (el.height - totalHeight) / 2)
     const { r, g, b } = hexToRgb01(el.textColor)
     lines.forEach((line, i) => {
       if (!line) return
-      const lineWidth = regularFont.widthOfTextAtSize(line, el.fontSize)
+      const lineWidth = font.widthOfTextAtSize(line, el.fontSize)
       const visualX = el.x + Math.max(0, (el.width - lineWidth) / 2)
       const visualY = startY + i * lineHeight + el.fontSize * BASELINE_RATIO
       const raw = visualPointToRaw(visualX, visualY, rawW, rawH, rotate)
-      page.drawText(line, { x: raw.x, y: raw.y, size: el.fontSize, font: regularFont, color: rgb(r, g, b), rotate: degrees(rotate) })
+      page.drawText(line, { x: raw.x, y: raw.y, size: el.fontSize, font, color: rgb(r, g, b), rotate: degrees(rotate) })
     })
   }
 }
@@ -135,14 +143,13 @@ function drawCheckboxElement(page: PDFPage, el: CheckboxElement, pageItem: PageI
 }
 
 async function drawElement(page: PDFPage, el: PageElement, pageItem: PageItem, ctx: {
-  regularFont: PDFFont | null
-  boldFont: PDFFont | null
+  getFont: FontLookup
   outDoc: PDFDocument
   imageCache: Map<string, any>
 }) {
   switch (el.kind) {
     case 'text':
-      await drawTextElement(page, el, pageItem, ctx.regularFont, ctx.boldFont)
+      await drawTextElement(page, el, pageItem, ctx.getFont)
       break
     case 'image':
       await drawImageElement(page, el, pageItem, ctx.outDoc, ctx.imageCache)
@@ -150,7 +157,7 @@ async function drawElement(page: PDFPage, el: PageElement, pageItem: PageItem, c
     case 'rect':
     case 'ellipse':
     case 'line':
-      drawShapeElement(page, el, pageItem, ctx.regularFont)
+      drawShapeElement(page, el, pageItem, ctx.getFont)
       break
     case 'checkbox':
       drawCheckboxElement(page, el, pageItem)
@@ -165,13 +172,26 @@ export async function buildPdf(pages: PageItem[], sourceDocs: Record<string, Sou
 
   // NOTE: pdf-lib's font subsetting (subset: true) has a bug where multi-character
   // CJK strings only render their last glyph, so fonts are embedded in full here.
-  // Fonts are only embedded when actually needed, since a full font is a few MB.
-  const needsRegular = pages.some((p) =>
-    p.elements.some((el) => (el.kind === 'text' && !el.bold) || ((el.kind === 'rect' || el.kind === 'ellipse' || el.kind === 'line') && el.text)),
-  )
-  const needsBold = pages.some((p) => p.elements.some((el) => el.kind === 'text' && el.bold))
-  const regularFont = needsRegular ? await outDoc.embedFont(await getRegularFontBytes(), { subset: false }) : null
-  const boldFont = needsBold ? await outDoc.embedFont(await getBoldFontBytes(), { subset: false }) : null
+  // Only the (family, weight) combinations actually used are embedded, since each
+  // full font is a few MB.
+  const neededCombos = new Set<string>()
+  for (const p of pages) {
+    for (const el of p.elements) {
+      if (el.kind === 'text') neededCombos.add(`${el.fontFamily}:${el.bold}`)
+      if ((el.kind === 'rect' || el.kind === 'ellipse' || el.kind === 'line') && el.text) {
+        neededCombos.add('mplus1p:false')
+      }
+    }
+  }
+  const fontCache = new Map<string, PDFFont>()
+  for (const combo of neededCombos) {
+    const [familyId, boldStr] = combo.split(':') as [FontFamilyId, string]
+    const bytes = await getFontBytes(familyId, boldStr === 'true')
+    fontCache.set(combo, await outDoc.embedFont(bytes, { subset: false }))
+  }
+  const getFont: FontLookup = (familyId, bold) => {
+    return fontCache.get(`${familyId}:${bold}`) ?? fontCache.get('mplus1p:false')!
+  }
 
   const srcCache = new Map<string, PDFDocument>()
   async function getSrcDoc(id: string): Promise<PDFDocument> {
@@ -192,7 +212,7 @@ export async function buildPdf(pages: PageItem[], sourceDocs: Record<string, Sou
     copiedPage.setRotation(degrees(combinedRotation(pageItem)))
 
     for (const el of pageItem.elements) {
-      await drawElement(copiedPage, el, pageItem, { regularFont, boldFont, outDoc, imageCache })
+      await drawElement(copiedPage, el, pageItem, { getFont, outDoc, imageCache })
     }
   }
 

@@ -603,3 +603,97 @@
   font-size: 12px;
   box-shadow: var(--shadow-sm);
 }
+.split-number-tag {
+  position: absolute;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  padding: 4px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  box-shadow: var(--shadow-sm);
+}
+.split-number-tag input {
+  width: 52px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 3px 5px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* Color picker */
+.color-picker {
+  position: relative;
+}
+.color-picker-swatch {
+  width: 100%;
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+}
+.color-picker-swatch:hover {
+  border-color: var(--border-strong);
+}
+.color-picker-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  box-shadow: var(--shadow-lg);
+  width: 176px;
+}
+.color-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+.color-picker-cell {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s ease;
+}
+.color-picker-cell:hover {
+  transform: scale(1.12);
+}
+.color-picker-cell.active {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.color-picker-custom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.color-picker-custom input[type='color'] {
+  width: 40px;
+  height: 24px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px;
+  background: #fff;
+  cursor: pointer;
+}

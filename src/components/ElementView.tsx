@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import type { PageElement, PageElementPatch } from '../types'
+import { getFontFamily } from '../lib/fonts'
 
 const HANDLES = ['nw', 'ne', 'sw', 'se'] as const
 type Handle = (typeof HANDLES)[number]
@@ -141,7 +142,10 @@ export function ElementView({
             style={{
               fontSize: element.fontSize * scale,
               color: element.color,
+              opacity: element.opacity,
               fontWeight: element.bold ? 700 : 400,
+              fontFamily: `'${getFontFamily(element.fontFamily).cssFamily}', sans-serif`,
+              textDecoration: element.underline ? 'underline' : 'none',
               textAlign: element.align,
               lineHeight: 1.3,
             }}
