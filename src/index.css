@@ -1,0 +1,59 @@
+@font-face {
+  font-family: 'MPLUS1p';
+  src: url('/fonts/MPLUS1p-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'MPLUS1p';
+  src: url('/fonts/MPLUS1p-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-display: swap;
+}
+
+:root {
+  --bg: #eef0f4;
+  --panel-bg: #ffffff;
+  --panel-bg-soft: #fafbfc;
+  --border: #e2e5eb;
+  --border-strong: #d3d8e0;
+  --text: #1b1e27;
+  --text-muted: #767c8a;
+  --accent: #5b5bf6;
+  --accent-2: #7c6ff2;
+  --accent-hover: #4747e0;
+  --accent-soft: #eef0ff;
+  --danger: #e5484d;
+  --danger-soft: #fdeeee;
+  --shadow-sm: 0 1px 2px rgba(20, 21, 41, 0.06);
+  --shadow-md: 0 4px 12px rgba(20, 21, 41, 0.08);
+  --shadow-lg: 0 12px 32px rgba(20, 21, 41, 0.14);
+  --radius: 10px;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 1024px;
+}
+
+body {
+  margin: 0;
+  font-family: 'MPLUS1p', system-ui, 'Segoe UI', sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+#root {
+  min-height: 100vh;
+  min-width: 1024px;
+}
