@@ -4,6 +4,7 @@ import { buildPdf } from '../lib/pdfExport'
 import { downloadBytes } from '../lib/download'
 import { createCheckboxElement, createImageElement, createShapeElement, createTextElement } from '../lib/elementFactory'
 import { PasswordDialog } from './PasswordDialog'
+import { PageSplitModal } from './PageSplitModal'
 
 export function Toolbar() {
   const pages = useStore((s) => s.pages)
@@ -17,6 +18,7 @@ export function Toolbar() {
   const pdfInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const [showPasswordDialog, setShowPasswordDialog] = useState(false)
+  const [showSplitModal, setShowSplitModal] = useState(false)
   const [exporting, setExporting] = useState(false)
 
   const currentPage = pages.find((p) => p.id === currentPageId)
@@ -91,6 +93,9 @@ export function Toolbar() {
       </div>
 
       <div className="toolbar-group toolbar-group-right">
+        <button disabled={!currentPage} onClick={() => setShowSplitModal(true)}>
+          ページを分割
+        </button>
         <button disabled={pages.length === 0 || exporting} onClick={exportMerged}>
           {exporting ? '書き出し中...' : 'PDFを書き出す'}
         </button>
@@ -101,6 +106,9 @@ export function Toolbar() {
 
       {loading && <div className="toolbar-loading">{loadingMessage}</div>}
       {showPasswordDialog && <PasswordDialog onClose={() => setShowPasswordDialog(false)} />}
+      {showSplitModal && currentPage && (
+        <PageSplitModal pageId={currentPage.id} onClose={() => setShowSplitModal(false)} />
+      )}
     </div>
   )
 }
