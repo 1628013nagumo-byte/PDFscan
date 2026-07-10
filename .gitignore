@@ -25,3 +25,6 @@ dist-ssr
 
 # Claude Code local dev-server config
 .claude/
+
+# tesseract.js Node-side language cache (downloaded automatically when testing OCR via Node)
+*.traineddata

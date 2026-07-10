@@ -5,6 +5,7 @@ import { downloadBytes } from '../lib/download'
 import { createCheckboxElement, createImageElement, createShapeElement, createTextElement } from '../lib/elementFactory'
 import { PasswordDialog } from './PasswordDialog'
 import { PageSplitModal } from './PageSplitModal'
+import { OcrModal } from './OcrModal'
 
 export function Toolbar() {
   const pages = useStore((s) => s.pages)
@@ -20,6 +21,7 @@ export function Toolbar() {
   const imageInputRef = useRef<HTMLInputElement>(null)
   const [showPasswordDialog, setShowPasswordDialog] = useState(false)
   const [showSplitModal, setShowSplitModal] = useState(false)
+  const [showOcrModal, setShowOcrModal] = useState(false)
   const [exporting, setExporting] = useState(false)
 
   const currentPage = pages.find((p) => p.id === currentPageId)
@@ -92,6 +94,9 @@ export function Toolbar() {
         <button disabled={!currentPage} onClick={addCheckbox}>
           + ☐ チェックボックス
         </button>
+        <button disabled={!currentPage} onClick={() => setShowOcrModal(true)}>
+          OCR(文字認識)
+        </button>
       </div>
 
       <div className="toolbar-group toolbar-group-right">
@@ -111,6 +116,7 @@ export function Toolbar() {
       {showSplitModal && splitTargetIds.length > 0 && (
         <PageSplitModal pageIds={splitTargetIds} onClose={() => setShowSplitModal(false)} />
       )}
+      {showOcrModal && currentPage && <OcrModal pageId={currentPage.id} onClose={() => setShowOcrModal(false)} />}
     </div>
   )
 }

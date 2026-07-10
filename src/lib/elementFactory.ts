@@ -116,6 +116,58 @@ export async function createImageElement(page: PageItem, file: File): Promise<Im
   }
 }
 
+/** Converts an OCR bounding box (in pixels, at the given render scale) into a page-space text element. */
+export function createOcrTextElement(bbox: { x0: number; y0: number; x1: number; y1: number }, text: string, renderScale: number): TextElement {
+  const x = bbox.x0 / renderScale
+  const y = bbox.y0 / renderScale
+  const width = Math.max(1, (bbox.x1 - bbox.x0) / renderScale)
+  const height = Math.max(1, (bbox.y1 - bbox.y0) / renderScale)
+  const fontSize = Math.min(72, Math.max(6, height * 0.75))
+  return {
+    id: uuid(),
+    kind: 'text',
+    x,
+    y,
+    width: Math.max(width, fontSize),
+    height: Math.max(height, fontSize * 1.3),
+    text,
+    fontSize,
+    color: '#111111',
+    opacity: 1,
+    bold: false,
+    underline: false,
+    fontFamily: 'mplus1p',
+    align: 'left',
+  }
+}
+
+/** A plain white patch placed behind OCR text so the edited text visually replaces the scanned pixels. */
+export function createOcrBackgroundElement(bbox: { x0: number; y0: number; x1: number; y1: number }, renderScale: number): ShapeElement {
+  const pad = 1
+  const x = bbox.x0 / renderScale - pad
+  const y = bbox.y0 / renderScale - pad
+  const width = Math.max(1, (bbox.x1 - bbox.x0) / renderScale) + pad * 2
+  const height = Math.max(1, (bbox.y1 - bbox.y0) / renderScale) + pad * 2
+  return {
+    id: uuid(),
+    kind: 'rect',
+    x,
+    y,
+    width,
+    height,
+    fillColor: '#FFFFFF',
+    fillOpacity: 1,
+    hasFill: true,
+    strokeColor: '#FFFFFF',
+    strokeOpacity: 1,
+    strokeWidth: 0,
+    hasStroke: false,
+    text: '',
+    textColor: '#111111',
+    fontSize: 14,
+  }
+}
+
 export const ELEMENT_LABELS: Record<ElementKind, string> = {
   text: 'テキスト',
   image: '画像',
