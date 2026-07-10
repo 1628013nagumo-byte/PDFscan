@@ -9,7 +9,15 @@ const docCache = new Map<string, Promise<PDFDocumentProxy>>()
 export function getPdfjsDoc(sourceDocId: string, bytes: ArrayBuffer): Promise<PDFDocumentProxy> {
   let entry = docCache.get(sourceDocId)
   if (!entry) {
-    entry = pdfjsLib.getDocument({ data: bytes.slice(0) }).promise
+    // Without these, PDFs whose fonts rely on external CMaps (very common for
+    // Japanese CID-keyed fonts) or non-embedded standard fonts render their
+    // page graphics fine but silently drop all text glyphs.
+    entry = pdfjsLib.getDocument({
+      data: bytes.slice(0),
+      cMapUrl: '/pdfjs/cmaps/',
+      cMapPacked: true,
+      standardFontDataUrl: '/pdfjs/standard_fonts/',
+    }).promise
     docCache.set(sourceDocId, entry)
   }
   return entry
