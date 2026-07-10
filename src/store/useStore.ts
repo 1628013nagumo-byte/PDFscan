@@ -8,6 +8,7 @@ interface StoreState {
   pages: PageItem[]
   currentPageId: string | null
   selectedElementId: string | null
+  selectedPageIds: string[]
   loading: boolean
   loadingMessage: string
 
@@ -17,6 +18,8 @@ interface StoreState {
   rotatePage: (pageId: string) => void
   movePage: (fromIndex: number, toIndex: number) => void
   setCurrentPage: (pageId: string | null) => void
+  togglePageSelection: (pageId: string) => void
+  clearPageSelection: () => void
   selectElement: (elementId: string | null) => void
   addElement: (pageId: string, element: PageElement) => void
   updateElement: (pageId: string, elementId: string, patch: PageElementPatch) => void
@@ -30,6 +33,7 @@ export const useStore = create<StoreState>((set, get) => ({
   pages: [],
   currentPageId: null,
   selectedElementId: null,
+  selectedPageIds: [],
   loading: false,
   loadingMessage: '',
 
@@ -85,7 +89,12 @@ export const useStore = create<StoreState>((set, get) => ({
         delete sourceDocs[removedDocId]
         invalidatePdfjsDoc(removedDocId)
       }
-      return { pages: remaining, currentPageId: nextCurrent, sourceDocs }
+      return {
+        pages: remaining,
+        currentPageId: nextCurrent,
+        sourceDocs,
+        selectedPageIds: s.selectedPageIds.filter((id) => id !== pageId),
+      }
     })
   },
 
@@ -123,6 +132,16 @@ export const useStore = create<StoreState>((set, get) => ({
 
   setCurrentPage: (pageId) => set({ currentPageId: pageId, selectedElementId: null }),
 
+  togglePageSelection: (pageId) => {
+    set((s) => ({
+      selectedPageIds: s.selectedPageIds.includes(pageId)
+        ? s.selectedPageIds.filter((id) => id !== pageId)
+        : [...s.selectedPageIds, pageId],
+    }))
+  },
+
+  clearPageSelection: () => set({ selectedPageIds: [] }),
+
   selectElement: (elementId) => set({ selectedElementId: elementId }),
 
   addElement: (pageId, element) => {
@@ -159,5 +178,6 @@ export const useStore = create<StoreState>((set, get) => ({
     }))
   },
 
-  clearAll: () => set({ sourceDocs: {}, pages: [], currentPageId: null, selectedElementId: null }),
+  clearAll: () =>
+    set({ sourceDocs: {}, pages: [], currentPageId: null, selectedElementId: null, selectedPageIds: [] }),
 }))

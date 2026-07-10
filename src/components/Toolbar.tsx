@@ -10,6 +10,7 @@ export function Toolbar() {
   const pages = useStore((s) => s.pages)
   const sourceDocs = useStore((s) => s.sourceDocs)
   const currentPageId = useStore((s) => s.currentPageId)
+  const selectedPageIds = useStore((s) => s.selectedPageIds)
   const addFiles = useStore((s) => s.addFiles)
   const addElement = useStore((s) => s.addElement)
   const loading = useStore((s) => s.loading)
@@ -22,6 +23,7 @@ export function Toolbar() {
   const [exporting, setExporting] = useState(false)
 
   const currentPage = pages.find((p) => p.id === currentPageId)
+  const splitTargetIds = selectedPageIds.length > 0 ? selectedPageIds : currentPage ? [currentPage.id] : []
 
   async function handlePdfFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? [])
@@ -93,8 +95,8 @@ export function Toolbar() {
       </div>
 
       <div className="toolbar-group toolbar-group-right">
-        <button disabled={!currentPage} onClick={() => setShowSplitModal(true)}>
-          ページを分割
+        <button disabled={splitTargetIds.length === 0} onClick={() => setShowSplitModal(true)}>
+          ページを分割{selectedPageIds.length > 1 ? `(${selectedPageIds.length})` : ''}
         </button>
         <button disabled={pages.length === 0 || exporting} onClick={exportMerged}>
           {exporting ? '書き出し中...' : 'PDFを書き出す'}
@@ -106,8 +108,8 @@ export function Toolbar() {
 
       {loading && <div className="toolbar-loading">{loadingMessage}</div>}
       {showPasswordDialog && <PasswordDialog onClose={() => setShowPasswordDialog(false)} />}
-      {showSplitModal && currentPage && (
-        <PageSplitModal pageId={currentPage.id} onClose={() => setShowSplitModal(false)} />
+      {showSplitModal && splitTargetIds.length > 0 && (
+        <PageSplitModal pageIds={splitTargetIds} onClose={() => setShowSplitModal(false)} />
       )}
     </div>
   )

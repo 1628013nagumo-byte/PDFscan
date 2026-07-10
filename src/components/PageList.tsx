@@ -14,19 +14,18 @@ export function PageList() {
   const duplicatePage = useStore((s) => s.duplicatePage)
   const rotatePage = useStore((s) => s.rotatePage)
   const movePage = useStore((s) => s.movePage)
+  const selectedPageIds = useStore((s) => s.selectedPageIds)
+  const togglePageSelection = useStore((s) => s.togglePageSelection)
+  const clearPageSelection = useStore((s) => s.clearPageSelection)
 
   const [selectMode, setSelectMode] = useState(false)
-  const [selected, setSelected] = useState<Set<string>>(new Set())
   const [busy, setBusy] = useState(false)
   const dragIndex = useRef<number | null>(null)
+  const selected = new Set(selectedPageIds)
 
-  function toggleSelected(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
+  function toggleSelectMode() {
+    if (selectMode) clearPageSelection()
+    setSelectMode((v) => !v)
   }
 
   async function exportPages(list: PageItem[], filename: string) {
@@ -83,7 +82,7 @@ export function PageList() {
   return (
     <div className="page-list">
       <div className="page-list-toolbar">
-        <button onClick={() => setSelectMode((v) => !v)} className={selectMode ? 'active' : ''}>
+        <button onClick={toggleSelectMode} className={selectMode ? 'active' : ''}>
           {selectMode ? '選択解除' : 'ページを選択'}
         </button>
         <button onClick={splitAllPages} disabled={busy}>
@@ -100,6 +99,9 @@ export function PageList() {
             個別PDFで書き出す(ZIP)
           </button>
         </div>
+      )}
+      {selectMode && selected.size > 0 && (
+        <p className="hint select-hint">選択中のページは、上部の「ページを分割」でまとめて同じ位置で分割できます。</p>
       )}
       <div className="page-list-items">
         {pages.map((page, index) => {
@@ -120,13 +122,13 @@ export function PageList() {
                 }
                 dragIndex.current = null
               }}
-              onClick={() => (selectMode ? toggleSelected(page.id) : setCurrentPage(page.id))}
+              onClick={() => (selectMode ? togglePageSelection(page.id) : setCurrentPage(page.id))}
             >
               {selectMode && (
                 <input
                   type="checkbox"
                   checked={selected.has(page.id)}
-                  onChange={() => toggleSelected(page.id)}
+                  onChange={() => togglePageSelection(page.id)}
                   onClick={(e) => e.stopPropagation()}
                 />
               )}
