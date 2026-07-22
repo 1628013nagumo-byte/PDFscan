@@ -10,7 +10,10 @@ const MIN_CONFIDENCE = 40
 /**
  * Runs OCR on an image and returns recognized text grouped by line.
  * tesseract.js and its language data are fetched on demand (lazily imported here)
- * so they never load unless OCR is actually used.
+ * so they never load unless OCR is actually used. All of tesseract's worker/core/
+ * language-data assets are served from this app's own /tesseract/ folder rather
+ * than tesseract.js's default jsdelivr CDN, so OCR never makes any third-party
+ * network request — the page image never leaves the browser.
  */
 export async function runOcr(
   imageDataUrl: string,
@@ -18,6 +21,9 @@ export async function runOcr(
 ): Promise<OcrLine[]> {
   const Tesseract = await import('tesseract.js')
   const worker = await Tesseract.createWorker(['jpn', 'eng'], undefined, {
+    workerPath: '/tesseract/worker.min.js',
+    corePath: '/tesseract/core/tesseract-core-simd-lstm.wasm.js',
+    langPath: '/tesseract/lang',
     logger: (m) => {
       if (m.status === 'recognizing text' && onProgress) onProgress(m.progress)
     },

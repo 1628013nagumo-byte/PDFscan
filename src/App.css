@@ -30,6 +30,18 @@
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   box-shadow: var(--shadow-sm);
 }
+.privacy-badge {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1a7f4b;
+  background: #eafaf1;
+  border: 1px solid #b7ebca;
+  padding: 5px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+  cursor: default;
+}
 
 .toolbar {
   display: flex;

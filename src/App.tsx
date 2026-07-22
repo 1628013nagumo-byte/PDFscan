@@ -9,6 +9,9 @@ function App() {
     <div className="app">
       <header className="app-header">
         <h1>PDF編集アプリ</h1>
+        <span className="privacy-badge" title="読み込んだファイルはブラウザ内だけで処理され、サーバーには一切送信されません">
+          🔒 ファイルは外部送信されません(ブラウザ内で完結)
+        </span>
       </header>
       <Toolbar />
       <div className="app-body">
